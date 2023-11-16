@@ -6,6 +6,7 @@ import random
 import json
 import logging
 from algoritmos import manhattan, users, pearson
+from IntelNeg import neighbors_options_distances, load_and_consolidate_data
 
 option_a = os.getenv('OPTION_A', "Bill y Angelica")
 option_b = os.getenv('OPTION_B', "Bill y Chan")
@@ -16,6 +17,8 @@ app = Flask(__name__)
 gunicorn_error_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers.extend(gunicorn_error_logger.handlers)
 app.logger.setLevel(logging.INFO)
+
+consolidate = load_and_consolidate_data('ratings.dat', num_rows=100000)
 
 def get_redis():
     if not hasattr(g, 'redis'):
@@ -32,28 +35,16 @@ def hello():
 
     if request.method == 'POST':
         redis = get_redis() 
-        user1 = request.form['user1']
-        user2 = request.form['user2']
-        option = request.form['options']
-        if option == "1":
-            try:
-                resultado = str(manhattan(users[user1], users[user2]))
-                seleccion = "Manhatan"
-            except Exception as e:
+        user1 = int(request.form['user1'])
+        option = int(request.form['options'])
+        try:
+            resultado, seleccion = neighbors_options_distances(user1, option, consolidate)
+        except Exception as e:
                 print(f"Se produjo un error: {e}")
                 abort(404)
-        elif option == "2":
-            try:
-                resultado = str(pearson(users[user1], users[user2]))
-                seleccion = "Pearson"
-            except Exception as e:
-                print(f"Se produjo un error: {e}")
-                abort(404)
-            
-        else:
-            abort(404)
+
         app.logger.info('Received vote for %s', resultado)
-        data = json.dumps({'voter_id': voter_id, 'user1': user1, 'user2': user2, 'option': seleccion, 'result': resultado})
+        data = json.dumps({'voter_id': voter_id, 'user1': user1, 'user2': "usuario2", 'option': seleccion, 'result': resultado})
         print (data)
         redis.rpush('votes', data)
 
