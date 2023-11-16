@@ -4,3 +4,5 @@ bin/
 obj/
 .vs/
 node_modules/
+/vote/ratings.dat
+/vote/output_binary.bin
